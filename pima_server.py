@@ -226,14 +226,12 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
 
 def mqtt_on_connect(client: mqtt.Client, userdata, flags, rc):
-  logging.debug('Connected to MQTT at %s:%d', _parsed_args.mqtt_host, _parsed_args.mqtt_port)
-
   mqtt_publish_discovery()
   mqtt_publish_lwt_online()
 
-  client.subscribe(_mqtt_topics['sub'])
+  logging.debug('Connected to MQTT at %s:%d', _parsed_args.mqtt_host, _parsed_args.mqtt_port)
 
-  logging.debug('Completed registration to MQTT')
+  client.subscribe(_mqtt_topics['sub'])
 
 def mqtt_on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage):
     try:
@@ -247,7 +245,7 @@ def mqtt_on_disconnect(client: mqtt.Client, userdata, rc):
 
 def mqtt_publish_status(status: dict) -> None:
   if _mqtt_client:
-    _mqtt_client.publish(_mqtt_topics['pub'], payload=to_json(status))
+    _mqtt_client.publish(_mqtt_topics['pub'], payload=to_json(status), retain=True)
 
 def mqtt_publish_discovery() -> None:
   if _mqtt_client:
@@ -351,7 +349,7 @@ def mqtt_connect() -> None:
   while True:
     try:
       _mqtt_client.connect(_parsed_args.mqtt_host, _parsed_args.mqtt_port)
-    except (socket.timeout, OSError):
+    except Exception as e:
       logging.exception('Failed to connect to MQTT broker. Retrying in 5 seconds...')
       time.sleep(5)
     else:
